@@ -34,9 +34,9 @@ import {
   X
 } from "lucide-react";
 
+
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
 
-// AI Mentor personalities — har mentor ka apna unique system prompt
 const AI_MENTOR_PERSONAS = {
   default: (mentor) => `You are ${mentor.profile?.fullName || "Alex"}, an experienced tech mentor on JoinSkill platform.
 Your skills: ${(mentor.profile?.skills || []).map(s => s.name).join(", ") || "Software Development"}.
@@ -56,10 +56,14 @@ async function getAIMentorReply(mentor, conversationHistory, userMessage) {
     })),
     { role: "user", content: userMessage },
   ];
-
   const response = await fetch(ANTHROPIC_API, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
@@ -555,15 +559,13 @@ function StatCard({ icon: Icon, label, value, accent }) {
   );
 }
 
+
 // ── AI Mentor Chat Modal ──────────────────────────────────────────────────────
 function AIMentorChatModal({ mentor, onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      id: "intro",
-      isUser: false,
-      text: `Hey! I'm ${mentor.profile?.fullName || "your mentor"}. 👋 I'm here to help you with ${(mentor.profile?.skills || []).slice(0, 2).map(s => s.name).join(" and ") || "your learning journey"}. What would you like to learn or discuss today?`,
-    },
-  ]);
+  const [messages, setMessages] = useState([{
+    id: "intro", isUser: false,
+    text: `Hey! I'm ${mentor.profile?.fullName || "your mentor"}. 👋 I'm here to help you with ${(mentor.profile?.skills || []).slice(0, 2).map(s => s.name).join(" and ") || "your learning journey"}. What would you like to learn or discuss today?`,
+  }]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const feedRef = useRef(null);
@@ -577,12 +579,10 @@ function AIMentorChatModal({ mentor, onClose }) {
     const text = draft.trim();
     if (!text || loading) return;
     setDraft("");
-
     const userMsg = { id: Date.now(), isUser: true, text };
     const history = [...messages, userMsg];
     setMessages(history);
     setLoading(true);
-
     try {
       const reply = await getAIMentorReply(mentor, messages, text);
       setMessages([...history, { id: Date.now() + 1, isUser: false, text: reply }]);
@@ -602,7 +602,7 @@ function AIMentorChatModal({ mentor, onClose }) {
           <div className="ai-mentor-info">
             <div className="ai-avatar-wrap">
               {photo ? <img src={photo} alt={mentor.profile?.fullName} /> : <span>{initials(mentor.profile?.fullName || mentor.username)}</span>}
-              <span className="ai-badge" title="AI-powered mentor">✦ AI</span>
+              <span className="ai-badge">✦ AI</span>
             </div>
             <div>
               <h2>{mentor.profile?.fullName || mentor.username}</h2>
@@ -611,7 +611,6 @@ function AIMentorChatModal({ mentor, onClose }) {
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </header>
-
         <div className="ai-message-feed" ref={feedRef}>
           {messages.map((msg) => (
             <div key={msg.id} className={classNames("ai-bubble", msg.isUser ? "ai-bubble-user" : "ai-bubble-mentor")}>
@@ -632,7 +631,6 @@ function AIMentorChatModal({ mentor, onClose }) {
             </div>
           )}
         </div>
-
         <form className="ai-compose" onSubmit={sendMessage}>
           <input
             value={draft}
@@ -652,13 +650,10 @@ function AIMentorChatModal({ mentor, onClose }) {
 
 // ── AI Video Session Modal ────────────────────────────────────────────────────
 function AIVideoSessionModal({ mentor, onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      id: "intro",
-      isUser: false,
-      text: `🎥 Video session started! Great to connect with you. I'm ${mentor.profile?.fullName || "your mentor"}, and I'm really excited to work with you today.\n\nWhat specific topic or problem would you like to tackle in our session?`,
-    },
-  ]);
+  const [messages, setMessages] = useState([{
+    id: "intro", isUser: false,
+    text: `🎥 Video session started! Great to connect with you. I'm ${mentor.profile?.fullName || "your mentor"}, and I'm really excited to work with you today.\n\nWhat specific topic or problem would you like to tackle in our session?`,
+  }]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
@@ -675,40 +670,31 @@ function AIVideoSessionModal({ mentor, onClose }) {
 
   const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-  const videoSystemPrompt = (mentor) => AI_MENTOR_PERSONAS.default(mentor) + `\n\nYou are currently in a LIVE VIDEO SESSION. Behave as if you're face-to-face. 
-  You can see the student. Occasionally reference the video context naturally (e.g. "let me share my screen", "can you try that in your editor", "I can see you're thinking about it").
-  Be interactive, ask clarifying questions, and create a real session feel.`;
-
   async function sendMessage(event) {
     event?.preventDefault();
     const text = draft.trim();
     if (!text || loading) return;
     setDraft("");
-
     const userMsg = { id: Date.now(), isUser: true, text };
     const history = [...messages, userMsg];
     setMessages(history);
     setLoading(true);
-
     try {
-      // Use video-specific prompt
-      const systemPrompt = videoSystemPrompt(mentor);
+      const systemPrompt = AI_MENTOR_PERSONAS.default(mentor) + `\n\nYou are in a LIVE VIDEO SESSION. Behave as if face-to-face. Occasionally reference video context naturally (e.g. "let me share my screen", "try that in your editor"). Be interactive and create a real session feel.`;
       const apiMessages = messages.map(m => ({ role: m.isUser ? "user" : "assistant", content: m.text }));
       apiMessages.push({ role: "user", content: text });
-
       const response = await fetch(ANTHROPIC_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: apiMessages,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: systemPrompt, messages: apiMessages }),
       });
       const data = await response.json();
-      const reply = data.content?.[0]?.text || "Let me think about that for a second...";
-      setMessages([...history, { id: Date.now() + 1, isUser: false, text: reply }]);
+      setMessages([...history, { id: Date.now() + 1, isUser: false, text: data.content?.[0]?.text || "Let me think about that..." }]);
     } catch {
       setMessages([...history, { id: Date.now() + 1, isUser: false, text: "Connection dropped for a moment. Can you repeat that?" }]);
     } finally {
@@ -717,16 +703,14 @@ function AIVideoSessionModal({ mentor, onClose }) {
   }
 
   const photo = mentor.profile?.photoUrl ? avatarUrl(mentor.profile.photoUrl) : null;
-  const initl = initials(mentor.profile?.fullName || mentor.username);
 
   return (
     <div className="ai-modal-overlay">
       <div className="ai-video-modal">
         <div className="ai-video-grid">
-          {/* Mentor "video" tile */}
           <div className="ai-video-tile ai-video-mentor">
             <div className="ai-video-avatar-large">
-              {photo ? <img src={photo} alt={mentor.profile?.fullName} /> : <span>{initl}</span>}
+              {photo ? <img src={photo} alt={mentor.profile?.fullName} /> : <span>{initials(mentor.profile?.fullName || mentor.username)}</span>}
             </div>
             {loading && <div className="ai-speaking-indicator"><span/><span/><span/></div>}
             <div className="ai-video-label">
@@ -734,30 +718,23 @@ function AIVideoSessionModal({ mentor, onClose }) {
               <span className="ai-badge-inline">✦ AI Mentor</span>
             </div>
           </div>
-          {/* "You" tile */}
           <div className="ai-video-tile ai-video-you">
-            <div className="ai-you-avatar">
-              <CircleUserRound size={40} />
-            </div>
+            <div className="ai-you-avatar"><CircleUserRound size={40} /></div>
             <div className="ai-video-label"><span>You</span></div>
           </div>
         </div>
-
         <div className="ai-video-meta">
           <span className="ai-session-time">🔴 {formatTime(sessionTime)}</span>
           <span>{(mentor.profile?.skills || []).slice(0, 1).map(s => s.name).join("") || "Mentoring Session"}</span>
         </div>
-
         <div className="ai-video-chat" ref={feedRef}>
           {messages.map((msg) => (
             <div key={msg.id} className={classNames("ai-video-msg", msg.isUser ? "ai-video-msg-user" : "ai-video-msg-mentor")}>
-              <strong>{msg.isUser ? "You" : mentor.profile?.fullName?.split(" ")[0] || "Mentor"}:</strong>{" "}
-              {msg.text}
+              <strong>{msg.isUser ? "You" : mentor.profile?.fullName?.split(" ")[0] || "Mentor"}:</strong>{" "}{msg.text}
             </div>
           ))}
           {loading && <div className="ai-video-msg ai-video-msg-mentor"><em>Thinking...</em></div>}
         </div>
-
         <div className="ai-video-controls">
           <form className="ai-compose ai-video-compose" onSubmit={sendMessage}>
             <input
@@ -769,9 +746,7 @@ function AIVideoSessionModal({ mentor, onClose }) {
             />
             <button type="submit" className="icon-btn" disabled={!draft.trim() || loading}><Send size={18}/></button>
           </form>
-          <button className="btn btn-danger" onClick={onClose}>
-            <Phone size={16} /> End Session
-          </button>
+          <button className="btn btn-danger" onClick={onClose}><Phone size={16} /> End Session</button>
         </div>
       </div>
     </div>
