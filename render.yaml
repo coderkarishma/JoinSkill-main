@@ -1,0 +1,24 @@
+services:
+  # ── Backend API + Socket.IO (Web Service) ──────────────────────────────────
+  - type: web
+    name: joinskill-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true        # Render auto-generates a secure random value
+      - key: CLIENT_ORIGIN
+        value: https://joinskill.netlify.app  # ← replace with your Netlify URL
+    disk:
+      name: joinskill-data
+      mountPath: /opt/render/project/src/server
+      sizeGB: 1                    # persists server/data/db.json & server/uploads/

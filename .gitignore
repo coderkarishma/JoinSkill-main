@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Local env file (never commit secrets)
+.env
+
+# Database & uploaded files (persisted by Render disk, not git)
+server/data/db.json
+server/uploads/*
+!server/uploads/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Vite cache
+.vite/
