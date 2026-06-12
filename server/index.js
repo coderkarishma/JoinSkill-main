@@ -37,11 +37,11 @@ const io = new Server(server, {
 
 const corsOptions = {
   origin(origin, callback) {
+    console.log("Request origin:", origin);
     if (!origin || CLIENT_ORIGINS.includes(origin)) {
       callback(null, true);
       return;
     }
-
     callback(new Error("Origin is not allowed by JoinSkill CORS."));
   },
   credentials: true
