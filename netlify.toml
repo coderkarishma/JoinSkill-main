@@ -5,9 +5,8 @@
 [build.environment]
   NODE_VERSION = "20"
   # Set your Render backend URL here before deploying:
-  VITE_API_URL    = "https://joinskill-api.onrender.com"
-  VITE_SOCKET_URL = "https://joinskill-api.onrender.com"
-
+VITE_API_URL    = "https://joinskill-main.onrender.com"
+VITE_SOCKET_URL = "https://joinskill-main.onrender.com"
 # ── SPA fallback: all routes → index.html ────────────────────────────────────
 [[redirects]]
   from   = "/*"
