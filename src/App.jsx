@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";  // ← yeh add karo
 
 
 const AI_MENTOR_PERSONAS = {
