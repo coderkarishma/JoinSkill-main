@@ -16,8 +16,8 @@ services:
         value: 10000
       - key: JWT_SECRET
         generateValue: true        # Render auto-generates a secure random value
-      - key: CLIENT_ORIGIN
-        value: https://joinskill.netlify.app  # ← replace with your Netlify URL
+      - - key: CLIENT_ORIGIN
+  value: "https://join-skill.netlify.app" # ← replace with your Netlify URL
     disk:
       name: joinskill-data
       mountPath: /opt/render/project/src/server
