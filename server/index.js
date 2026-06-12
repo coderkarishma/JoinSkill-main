@@ -29,21 +29,13 @@ const id = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10);
 
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_ORIGINS,
+    origin: true,
     methods: ["GET", "POST", "PUT"],
     credentials: true
   }
 });
-
 const corsOptions = {
-  origin(origin, callback) {
-    console.log("Request origin:", origin);
-    if (!origin || CLIENT_ORIGINS.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-    callback(new Error("Origin is not allowed by JoinSkill CORS."));
-  },
+  origin: true,
   credentials: true
 };
 
